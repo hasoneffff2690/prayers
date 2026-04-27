@@ -3,141 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Prayer Widget</title>
+    <title>Prayer Widget Pro + Adhan</title>
     <style>
-        :root {
-            --bg-glass: rgba(255, 255, 255, 0.1);
-            --blue-active: #00d2ff;
-            --text-main: #ffffff;
-            --text-sub: #e0e0e0;
+        :root { --blue-glow: #00d2ff; }
+        
+        body { 
+            margin: 0; height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; 
+            background: #0d0d0d; font-family: sans-serif; overflow: hidden; 
         }
 
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: transparent;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        .widget {
+            width: 160px; height: 160px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
+            border: 2px solid var(--blue-glow);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; text-align: center; 
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6);
+            margin-bottom: 50px;
         }
 
-        /* حاوية الأيقونة الدائرية */
-        .widget-container {
-            position: relative;
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: var(--bg-glass);
-            backdrop-filter: blur(12px) saturate(180%);
-            -webkit-backdrop-filter: blur(12px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            overflow: hidden;
-        }
+        .name { font-size: 24px; font-weight: bold; }
+        .time { font-size: 16px; opacity: 0.9; margin-top: 5px; }
+        .countdown { font-size: 14px; color: var(--blue-glow); margin-top: 10px; font-weight: bold; }
 
-        /* نصوص الصلاة */
-        .prayer-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-main);
-            letter-spacing: 0.5px;
+        .start-btn {
+            padding: 18px 45px; border-radius: 35px; border: none;
+            background: var(--blue-glow); color: #0d0d0d;
+            font-weight: bold; cursor: pointer; font-size: 18px;
+            box-shadow: 0 0 25px rgba(0, 210, 255, 0.5);
+            text-decoration: none;
         }
-
-        .prayer-time {
-            font-size: 11px;
-            color: var(--text-sub);
-            margin-top: 2px;
-        }
-
-        .countdown {
-            font-size: 9px;
-            color: var(--blue-active);
-            margin-top: 4px;
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
-        }
-
-        /* حالة وقت الصلاة - التوهج الأزرق النبضي */
-        .is-active {
-            border: 2px solid var(--blue-active);
-            box-shadow: 0 0 25px var(--blue-active);
-            animation: pulse-blue 2s infinite;
-        }
-
-        @keyframes pulse-blue {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.03); filter: brightness(1.2); }
-            100% { transform: scale(1); filter: brightness(1); }
-        }
-
-        /* إخفاء شريط التمرير */
-        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="mainWidget" class="widget-container">
-        <div id="pName" class="prayer-name">جاري...</div>
-        <div id="pTime" class="prayer-time">--:--</div>
-        <div id="pCount" class="countdown"></div>
+    <audio id="adhanAudio">
+        <source src="https://www.islamcan.com/islamic-ringtones/Morning_Azaan.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="pCard" class="widget">
+        <div id="pName" class="name">تحميل..</div>
+        <div id="pTime" class="time">..</div>
+        <div id="pCount" class="countdown">..</div>
     </div>
 
-    <script type="module">
-        import adhan from 'https://cdn.skypack.dev/adhan';
+    <a href="http://action_exit" class="start-btn" onclick="enableAudio()">تشغيل وتثبيت</a>
 
-        const pName = document.getElementById('pName');
-        const pTime = document.getElementById('pTime');
-        const pCount = document.getElementById('pCount');
-        const widget = document.getElementById('mainWidget');
+    <script>
+        let audioEnabled = false;
 
-        function updateUI() {
-            if (!navigator.geolocation) {
-                pName.innerText = "GPS مطلوب";
-                return;
+        function enableAudio() {
+            // المتصفحات تمنع تشغيل الصوت تلقائياً إلا بعد تفاعل المستخدم
+            const audio = document.getElementById('adhanAudio');
+            audio.play().then(() => {
+                audio.pause(); // تشغيل وإيقاف سريع فقط لتفعيل الإذن
+                audioEnabled = true;
+            });
+        }
+
+        function update() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const times = {"الفجر": [4, 15], "الظهر": [12, 10], "العصر": [15, 45], "المغرب": [18, 50], "العشاء": [20, 20]};
+                    const now = new Date();
+                    const currentTime = now.getHours() * 60 + now.getMinutes();
+                    
+                    let selectedName = "الفجر";
+                    let selectedTime = times["الفجر"];
+
+                    if (currentTime > (20 * 60 + 20)) { selectedName = "الفجر"; selectedTime = [28, 15]; }
+                    else if (currentTime > (18 * 60 + 50)) { selectedName = "العشاء"; selectedTime = times["العشاء"]; }
+                    else if (currentTime > (15 * 60 + 45)) { selectedName = "المغرب"; selectedTime = times["المغرب"]; }
+                    else if (currentTime > (12 * 60 + 10)) { selectedName = "العصر"; selectedTime = times["العصر"]; }
+                    else if (currentTime > (4 * 60 + 15)) { selectedName = "الظهر"; selectedTime = times["الظهر"]; }
+
+                    document.getElementById('pName').innerText = selectedName;
+                    
+                    // تحويل الوقت إلى نظام 12 ساعة
+                    let hour24 = selectedTime[0] > 23 ? selectedTime[0] - 24 : selectedTime[0];
+                    let period = hour24 >= 12 ? "م" : "ص";
+                    let hour12 = hour24 % 12 || 12;
+
+                    document.getElementById('pTime').innerText = 
+                        `${hour12.toString().padStart(2, '0')}:${selectedTime[1].toString().padStart(2, '0')} ${period}`;
+                    
+                    let diffMinutes = (selectedTime[0] * 60 + selectedTime[1]) - currentTime;
+                    document.getElementById('pCount').innerText = `باقي ${Math.floor(diffMinutes/60)}س و${diffMinutes%60}د`;
+
+                    // تشغيل الصوت عندما يصبح العد التنازلي صفراً
+                    if (diffMinutes === 0 && audioEnabled) {
+                        document.getElementById('adhanAudio').play();
+                    }
+                });
             }
-
-            navigator.geolocation.getCurrentPosition(position => {
-                const coords = new adhan.Coordinates(position.coords.latitude, position.coords.longitude);
-                const params = adhan.CalculationMethod.UmmAlQura(); // دقيق للشرق الأوسط
-                const date = new Date();
-                const prayerTimes = new adhan.PrayerTimes(coords, date, params);
-
-                const names = {
-                    fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", 
-                    maghrib: "المغرب", isha: "العشاء", none: "الفجر"
-                };
-
-                let next = prayerTimes.nextPrayer();
-                if (next === 'none' || next === 'sunrise') next = 'fajr';
-
-                // وقت الصلاة القادمة
-                const targetTime = prayerTimes.timeForPrayer(next);
-                
-                // تحديث النصوص
-                pName.innerText = names[next];
-                pTime.innerText = targetTime.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
-
-                // حساب العد التنازلي
-                const diff = targetTime - new Date();
-                const mins = Math.floor(diff / 1000 / 60);
-                const hrs = Math.floor(mins / 60);
-                
-                if (hrs > 0) {
-                    pCount.innerText = `باقي ${hrs}س و${mins % 60}د`;
-                } else {
-                    pCount.innerText = `باقي ${mins} دقيقة`;
-                }
-
-                // منطق التوهج الأزرق (عندما يحين وقت الصلاة الحالية)
-                const current = prayerTimes.currentPrayer();
-                if (current !== 'none' && current !== 'sunrise') {
-                    widget.classList.add('is-active');
-                    pCount.innerText = "حان الآن";
-                } else 
+        }
+        update(); setInterval(update, 60000);
+    </script>
+</body>
+</html>
