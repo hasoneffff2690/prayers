@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Prayer Widget</title>
+    <style>
+        :root {
+            --bg-glass: rgba(255, 255, 255, 0.1);
+            --blue-active: #00d2ff;
+            --text-main: #ffffff;
+            --text-sub: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* حاوية الأيقونة الدائرية */
+        .widget-container {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        /* نصوص الصلاة */
+        .prayer-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+        }
+
+        .prayer-time {
+            font-size: 11px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .countdown {
+            font-size: 9px;
+            color: var(--blue-active);
+            margin-top: 4px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
+        }
+
+        /* حالة وقت الصلاة - التوهج الأزرق النبضي */
+        .is-active {
+            border: 2px solid var(--blue-active);
+            box-shadow: 0 0 25px var(--blue-active);
+            animation: pulse-blue 2s infinite;
+        }
+
+        @keyframes pulse-blue {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.03); filter: brightness(1.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        /* إخفاء شريط التمرير */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="mainWidget" class="widget-container">
+        <div id="pName" class="prayer-name">جاري...</div>
+        <div id="pTime" class="prayer-time">--:--</div>
+        <div id="pCount" class="countdown"></div>
+    </div>
+
+    <script type="module">
+        import adhan from 'https://cdn.skypack.dev/adhan';
+
+        const pName = document.getElementById('pName');
+        const pTime = document.getElementById('pTime');
+        const pCount = document.getElementById('pCount');
+        const widget = document.getElementById('mainWidget');
+
+        function updateUI() {
+            if (!navigator.geolocation) {
+                pName.innerText = "GPS مطلوب";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(position => {
+                const coords = new adhan.Coordinates(position.coords.latitude, position.coords.longitude);
+                const params = adhan.CalculationMethod.UmmAlQura(); // دقيق للشرق الأوسط
+                const date = new Date();
+                const prayerTimes = new adhan.PrayerTimes(coords, date, params);
+
+                const names = {
+                    fajr: "الفجر", dhuhr: "الظهر", asr: "العصر", 
+                    maghrib: "المغرب", isha: "العشاء", none: "الفجر"
+                };
+
+                let next = prayerTimes.nextPrayer();
+                if (next === 'none' || next === 'sunrise') next = 'fajr';
+
+                // وقت الصلاة القادمة
+                const targetTime = prayerTimes.timeForPrayer(next);
+                
+                // تحديث النصوص
+                pName.innerText = names[next];
+                pTime.innerText = targetTime.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'});
+
+                // حساب العد التنازلي
+                const diff = targetTime - new Date();
+                const mins = Math.floor(diff / 1000 / 60);
+                const hrs = Math.floor(mins / 60);
+                
+                if (hrs > 0) {
+                    pCount.innerText = `باقي ${hrs}س و${mins % 60}د`;
+                } else {
+                    pCount.innerText = `باقي ${mins} دقيقة`;
+                }
+
+                // منطق التوهج الأزرق (عندما يحين وقت الصلاة الحالية)
+                const current = prayerTimes.currentPrayer();
+                if (current !== 'none' && current !== 'sunrise') {
+                    widget.classList.add('is-active');
+                    pCount.innerText = "حان الآن";
+                } else 
