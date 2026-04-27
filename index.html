@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prayer Widget Pro + Adhan</title>
+    <title>Prayer Widget Pro</title>
     <style>
         :root { --blue-glow: #00d2ff; }
         
@@ -13,6 +13,7 @@
             background: #0d0d0d; font-family: sans-serif; overflow: hidden; 
         }
 
+        /* الأيقونة بحجم 160px كما طلبت */
         .widget {
             width: 160px; height: 160px; border-radius: 50%;
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
@@ -32,14 +33,14 @@
             background: var(--blue-glow); color: #0d0d0d;
             font-weight: bold; cursor: pointer; font-size: 18px;
             box-shadow: 0 0 25px rgba(0, 210, 255, 0.5);
-            text-decoration: none;
+            transition: 0.3s;
         }
     </style>
 </head>
 <body>
 
     <audio id="adhanAudio">
-        <source src="https://www.islamcan.com/islamic-ringtones/Morning_Azaan.mp3" type="audio/mpeg">
+        <source src="https://www.islamcan.com/common/adhan/adhan1.mp3" type="audio/mpeg">
     </audio>
 
     <div id="pCard" class="widget">
@@ -48,18 +49,18 @@
         <div id="pCount" class="countdown">..</div>
     </div>
 
-    <a href="http://action_exit" class="start-btn" onclick="enableAudio()">تشغيل وتثبيت</a>
+    <button class="start-btn" onclick="activateSystem()">تفعيل التنبيه والموقع</button>
 
     <script>
         let audioEnabled = false;
 
-        function enableAudio() {
-            // المتصفحات تمنع تشغيل الصوت تلقائياً إلا بعد تفاعل المستخدم
+        function activateSystem() {
             const audio = document.getElementById('adhanAudio');
             audio.play().then(() => {
-                audio.pause(); // تشغيل وإيقاف سريع فقط لتفعيل الإذن
+                audio.pause();
                 audioEnabled = true;
-            });
+                alert("تم تفعيل نظام الأذان التلقائي وتحديث الموقع.");
+            }).catch(e => console.log("Audio permission needed"));
         }
 
         function update() {
@@ -80,7 +81,7 @@
 
                     document.getElementById('pName').innerText = selectedName;
                     
-                    // تحويل الوقت إلى نظام 12 ساعة
+                    // نظام 12 ساعة
                     let hour24 = selectedTime[0] > 23 ? selectedTime[0] - 24 : selectedTime[0];
                     let period = hour24 >= 12 ? "م" : "ص";
                     let hour12 = hour24 % 12 || 12;
@@ -91,7 +92,6 @@
                     let diffMinutes = (selectedTime[0] * 60 + selectedTime[1]) - currentTime;
                     document.getElementById('pCount').innerText = `باقي ${Math.floor(diffMinutes/60)}س و${diffMinutes%60}د`;
 
-                    // تشغيل الصوت عندما يصبح العد التنازلي صفراً
                     if (diffMinutes === 0 && audioEnabled) {
                         document.getElementById('adhanAudio').play();
                     }
